@@ -18,22 +18,49 @@ namespace Optimization
 
         public static PathGenerator Instance { get { return instance; } }
 
-        public List<Path> GetInitialPaths()
+        public List<(Path path, (double f1, double f2) fitness)> GetInitialPaths()
         {
-            List<Path> initialPaths = new List<Path>(SimulationData.Instance.initialPopulationSize);
+            List<(Path path, (double f1, double f2) fitness)> initialPaths = new List<(Path path, (double f1, double f2) fitness)>(SimulationData.Instance.initialPopulationSize);
 
             Path xMonotone = generateXMonotonePath(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell);
             Path yMonotone = generateYMonotonePath(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell);
             monotonePathLength = xMonotone.pathCells.Count;
 
-            initialPaths.Add(xMonotone);
-            initialPaths.Add(yMonotone);
+            initialPaths.Add((xMonotone,(0,0)));
+            initialPaths.Add((xMonotone, (0, 0)));
 
             int randomPathsAmount = SimulationData.Instance.initialPopulationSize - 2;
             while (randomPathsAmount-- > 0)
-                initialPaths.Add(generateRandomPath(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell));
+                initialPaths.Add((generateRandomPath(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell),(0,0)));
 
             return initialPaths;
+        }
+        public List<(int, int)> connectCellsMonotony((int, int) from, (int, int) to, bool? isXmonotone = null)
+        {
+            if (!isXmonotone.HasValue)
+                isXmonotone = random.Next(2) == 1;
+            List<(int, int)> pathCells = new List<(int, int)>();
+
+            pathCells.AddRange((bool)isXmonotone ? getMonotonXCells(from, to) : getMonotonYCells(from, to));
+            pathCells.AddRange((bool)isXmonotone ? getMonotonYCells(from, to) : getMonotonXCells(from, to));
+
+
+            return pathCells;
+        }
+
+        public List<(int, int)> BypassObstacle((int x, int y) from, (int x, int y) to, (int x, int y) obstacle)
+        {
+            List<(int, int)> bypassedCells = new List<(int, int)>();
+            (int x,int y) currentIndex = from;
+            while(!(currentIndex.x == to.x && currentIndex.y == to.y))
+            {
+                (int x,int y) tempCell = getNextRandomCell(currentIndex, to);
+                if (tempCell.x == obstacle.x && tempCell.y == obstacle.y)
+                    continue;
+                currentIndex = tempCell;
+                bypassedCells.Add(currentIndex);
+            }
+            return bypassedCells;
         }
 
         private Path generateRandomPath((int x, int y) sIndex, (int x, int y) dIndex)
@@ -56,66 +83,56 @@ namespace Optimization
 
         private Path generateXMonotonePath((int x, int y) sIndex, (int x, int y) dIndex)
         {
-            var currentIndex = sIndex;
             Path newPath = initializePath(sIndex);
-
-            while (currentIndex.x < dIndex.x)
-            {
-                currentIndex = (currentIndex.x + 1, currentIndex.y);
-                newPath.pathCells.Add(currentIndex);
-            }
-
-            while (currentIndex.x > dIndex.x)
-            {
-                currentIndex = (currentIndex.x - 1, currentIndex.y);
-                newPath.pathCells.Add(currentIndex);
-            }
-
-            while (currentIndex.y < dIndex.y)
-            {
-                currentIndex = (currentIndex.x, currentIndex.y + 1);
-                newPath.pathCells.Add(currentIndex);
-            }
-
-            while (currentIndex.x > dIndex.x)
-            {
-                currentIndex = (currentIndex.x, currentIndex.y - 1);
-                newPath.pathCells.Add(currentIndex);
-            }
-
+            newPath.pathCells.AddRange(connectCellsMonotony(sIndex, dIndex, true));
             return newPath;
         }
 
         private Path generateYMonotonePath((int x, int y) sIndex, (int x, int y) dIndex)
         {
-            var currentIndex = sIndex;
             Path newPath = initializePath(sIndex);
+            newPath.pathCells.AddRange(connectCellsMonotony(sIndex, dIndex, false));
+            return newPath;
+        }
 
-            while (currentIndex.y < dIndex.y)
-            {
-                currentIndex = (currentIndex.x, currentIndex.y + 1);
-                newPath.pathCells.Add(currentIndex);
-            }
+        private List<(int, int)> getMonotonXCells((int x, int y) from, (int x, int y) to)
+        {
+            var currentIndex = from;
+            List<(int, int)> pathCells = new List<(int, int)>();
 
-            while (currentIndex.x > dIndex.x)
-            {
-                currentIndex = (currentIndex.x, currentIndex.y - 1);
-                newPath.pathCells.Add(currentIndex);
-            }
-
-            while (currentIndex.x < dIndex.x)
+            while (currentIndex.x < to.x)
             {
                 currentIndex = (currentIndex.x + 1, currentIndex.y);
-                newPath.pathCells.Add(currentIndex);
+                pathCells.Add(currentIndex);
             }
 
-            while (currentIndex.x > dIndex.x)
+            while (currentIndex.x > to.x)
             {
                 currentIndex = (currentIndex.x - 1, currentIndex.y);
-                newPath.pathCells.Add(currentIndex);
+                pathCells.Add(currentIndex);
             }
 
-            return newPath;
+            return pathCells;
+        }
+
+        private List<(int, int)> getMonotonYCells((int x, int y) from, (int x, int y) to)
+        {
+            var currentIndex = from;
+            List<(int, int)> pathCells = new List<(int, int)>();
+
+            while (currentIndex.y < to.y)
+            {
+                currentIndex = (currentIndex.x, currentIndex.y + 1);
+                pathCells.Add(currentIndex);
+            }
+
+            while (currentIndex.y > to.y)
+            {
+                currentIndex = (currentIndex.x, currentIndex.y - 1);
+                pathCells.Add(currentIndex);
+            }
+
+            return pathCells;
         }
 
         private Path initializePath((int, int) sIndex)

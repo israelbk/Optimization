@@ -13,6 +13,7 @@ namespace Optimization
             SimulationInitializer.InitSimulation();
             Printer.PrintGrid();
             MooAlgorithm alg = new MooAlgorithm();
+            alg.RunSimulation();
         }
     }
 }
