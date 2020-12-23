@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,34 +9,19 @@ namespace Optimization
 {
     class MooAlgorithm
     {
-        private int populationSize { get; set; }
         List<Path> pathsPopulation { get; set; }
+        private Stopwatch watch { get; set; }
+        private long initalPopulationTime { get; set; }
 
         public MooAlgorithm()
         {
-            populationSize = SimulationData.Instance.initialPopulationSize;
-            SetInitialPopulation(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell);
-            //Printer.PrintPaths(pathsPopulation);
-
-            var watch = new System.Diagnostics.Stopwatch();
-
-            Console.WriteLine("Execution time messurtment started");
-
+            watch = new Stopwatch();
             watch.Start();
-
-            foreach (Path path in pathsPopulation)
-            {
-                GetFitnessEvaluation(path, SimulationData.Instance.simulationGrid);
-            }
-
+            pathsPopulation = PathGenerator.Instance.GetInitialPaths();
             watch.Stop();
+            initalPopulationTime = watch.ElapsedMilliseconds;
+            watch.Reset();
 
-            Console.WriteLine($"Execution time is {watch.ElapsedMilliseconds}");
-        }
-
-        private void SetInitialPopulation((int, int) sIndex, (int, int) dIndex)
-        {
-            pathsPopulation = PathGenerator.Instance.GetInitialPaths(sIndex, dIndex, populationSize);
         }
 
         private (double, double) GetFitnessEvaluation(Path pathToEvaluate, Grid grid)
@@ -44,7 +30,6 @@ namespace Optimization
             double obstaclesCellsCount = 0;
             double pathSumWD = 0;
             double f1, f2;
-
 
             foreach ((int x, int y) cell in pathToEvaluate.pathCells)
             {
@@ -60,8 +45,7 @@ namespace Optimization
                     // Sum WD of cell.
                     pathSumWD += grid.GetCellWD(cell);
                 }
-
-            }
+             }
 
             if (outOfBoundryCellsCount != 0)
                 f1 = 1;
@@ -77,5 +61,7 @@ namespace Optimization
 
             return (f1, f2);
         }
+
+
     }
 }

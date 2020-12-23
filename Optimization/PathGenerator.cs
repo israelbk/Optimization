@@ -18,20 +18,20 @@ namespace Optimization
 
         public static PathGenerator Instance { get { return instance; } }
 
-        public List<Path> GetInitialPaths((int, int) sIndex, (int, int) dIndex, int amountOfPaths)
+        public List<Path> GetInitialPaths()
         {
-            List<Path> initialPaths = new List<Path>();
+            List<Path> initialPaths = new List<Path>(SimulationData.Instance.initialPopulationSize);
 
-            Path xMonotone = generateXMonotonePath(sIndex, dIndex);
-            Path yMonotone = generateYMonotonePath(sIndex, dIndex);
+            Path xMonotone = generateXMonotonePath(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell);
+            Path yMonotone = generateYMonotonePath(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell);
             monotonePathLength = xMonotone.pathCells.Count;
 
             initialPaths.Add(xMonotone);
             initialPaths.Add(yMonotone);
 
-            int randomPathsAmount = amountOfPaths - 2;
+            int randomPathsAmount = SimulationData.Instance.initialPopulationSize - 2;
             while (randomPathsAmount-- > 0)
-                initialPaths.Add(generateRandomPath(sIndex, dIndex));
+                initialPaths.Add(generateRandomPath(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell));
 
             return initialPaths;
         }
@@ -149,8 +149,10 @@ namespace Optimization
         /// <returns></returns>
         private (int, int) getNextRandomCell((int x, int y) currentIndex, (int x, int y) dIndex)
         {
-            int xDirection = dIndex.x > currentIndex.x ? 1 : -1;
-            int yDirection = dIndex.y > currentIndex.y ? 1 : -1;
+            int xDirection = dIndex.x == currentIndex.x ? 0 : dIndex.x > currentIndex.x ? 1 : -1;
+            int yDirection = dIndex.y == currentIndex.y ? 0 : dIndex.y > currentIndex.y ? 1 : -1;
+            int oppositeX = xDirection == 0 ? (random.Next(2) == 0 ? -1 : 1) : -1 * xDirection;
+            int oppositeY = yDirection == 0 ? (random.Next(2) == 0 ? -1 : 1) : -1 * yDirection;
 
             int num = random.Next(25);
 
@@ -161,16 +163,15 @@ namespace Optimization
             else if (num <= 13)
                 return (currentIndex.x, currentIndex.y + yDirection);
             else if (num <= 16)
-                return (currentIndex.x + xDirection, currentIndex.y - yDirection);
+                return (currentIndex.x + xDirection, currentIndex.y + oppositeY);
             else if (num <= 19)
-                return (currentIndex.x - xDirection, currentIndex.y + yDirection);
+                return (currentIndex.x + oppositeX, currentIndex.y + yDirection);
             else if (num <= 21)
-                return (currentIndex.x, currentIndex.y - yDirection);
+                return (currentIndex.x, currentIndex.y + oppositeY);
             else if (num <= 23)
-                return (currentIndex.x - xDirection, currentIndex.y);
+                return (currentIndex.x + oppositeX, currentIndex.y);
             else
-                return (currentIndex.x - xDirection, currentIndex.y - yDirection);
-
+                return (currentIndex.x + oppositeX, currentIndex.y + oppositeY);
         }
     }
 }

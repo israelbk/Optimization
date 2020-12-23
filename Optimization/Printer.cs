@@ -52,6 +52,21 @@ namespace Optimization
 
         }
 
+        public static void PrintMetaData()
+        {
+
+            // Prints the source and destination of the path.
+            Console.WriteLine("\n");
+            Console.WriteLine($"Calculating path from " +
+               $"({SimulationData.Instance.sourceCell.Item1},{SimulationData.Instance.sourceCell.Item2})" +
+               $" to ({SimulationData.Instance.destinationCell.Item1},{SimulationData.Instance.destinationCell.Item2})");
+            Console.WriteLine("\n");
+
+
+
+        }
+
+
         public static void PrintPaths(List<Path> paths)
         {
             int i = 0;
