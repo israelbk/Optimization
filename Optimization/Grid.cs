@@ -9,7 +9,7 @@ namespace Optimization
     class Grid
     {
         public int size { get; private set; }
-        private double[,] cellsWD { get; set; }
+        public double[,] cellsWD { get; set; }
         private Random randomizer;
 
         public Grid(int size, int obstaclesAnount)

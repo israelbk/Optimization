@@ -8,8 +8,9 @@ namespace Optimization
 {
     static class Printer
     {
-        public static void PrintGrid(Grid grid)
+        public static void PrintGrid()
         {
+            Grid grid = SimulationData.Instance.simulationGrid;
             Console.WriteLine();
             Console.Write('\t');
             for (int i = 0; i < grid.size; i++)
