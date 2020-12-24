@@ -1,5 +1,4 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Optimization
 {
@@ -12,11 +11,8 @@ namespace Optimization
         public int GenerationAmount { get; set; }
         public Grid SimulationGrid { get; set; }
         public List<Path> PathsPopulation { get; set; }
-        public Dictionary<int,(double f1, double f2)> Fitnesses { get; set; }
-
-
+        public Dictionary<int, (double f1, double f2)> Fitnesses { get; set; }
         private static SimulationData instance = new SimulationData();
-
         public static SimulationData Instance => instance;
         private SimulationData() { }
     }

@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Optimization
 {
-    class Grid
+    public class Grid
     {
         public int size { get; private set; }
         public double[,] cellsWD { get; set; }
@@ -38,20 +34,15 @@ namespace Optimization
                     }
                     else
                     {
-                        cellsWD[i, j] = randomizer.NextDouble()<0.5?0:Math.Round(random, 2);
+                        cellsWD[i, j] = randomizer.NextDouble() < 0.5 ? 0 : Math.Round(random, 2);
                     }
                 }
             }
         }
-        
-        public double GetCellWD((int x,int y) index)
+
+        public double GetCellWD((int x, int y) index)
         {
             return cellsWD[index.x, index.y];
-        }
-
-        public void setGrid(double[,] grid)
-        {
-            this.cellsWD = grid;
         }
     }
 }

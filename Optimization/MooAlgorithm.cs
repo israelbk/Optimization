@@ -2,18 +2,18 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Optimization
 {
     class MooAlgorithm
     {
-         private Stopwatch watch { get; set; }
+        private Stopwatch watch { get; set; }
         private long initalPopulationTime { get; set; }
+        Random random;
 
         public MooAlgorithm()
         {
+            random = new Random();
             watch = new Stopwatch();
             watch.Start();
             PathGenerator.Instance.GetInitialPaths();
@@ -52,13 +52,13 @@ namespace Optimization
 
         private void SelectionMechanism()
         {
-            throw new NotImplementedException();
+            var paths = SimulationData.Instance.Fitnesses.Keys.ToArray().OrderBy(c => random.Next()).ToArray();
         }
 
         private void EvaluatePaths()
         {
             // Reset fitnesses.
-            SimulationData.Instance.Fitnesses = new Dictionary<int, (int f1, int f2)>();
+            SimulationData.Instance.Fitnesses = new Dictionary<int, (double f1, double f2)>();
             foreach (var path in SimulationData.Instance.PathsPopulation)
                 SimulationData.Instance.Fitnesses.Add(path.pathId, GetPathFitnessEvaluation(path));
         }
@@ -85,7 +85,7 @@ namespace Optimization
                 {
                     int lastCellInBound = i - 1;
                     // Run while we still out of bounds or items left.
-                    while (i < path.pathCells.Count-1 && isCellOutOfBounds(path.pathCells[++i])) ;
+                    while (i < path.pathCells.Count - 1 && isCellOutOfBounds(path.pathCells[++i])) ;
                     tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.connectCellsMonotony(path.pathCells[lastCellInBound], path.pathCells[i]));
                 }
                 else
@@ -100,7 +100,7 @@ namespace Optimization
             for (int i = 0; i < tempRepairedPath.pathCells.Count; i++)
             {
                 // Cell is obstacle.
-                if(SimulationData.Instance.SimulationGrid.GetCellWD(tempRepairedPath.pathCells[i]) == 1)
+                if (SimulationData.Instance.SimulationGrid.GetCellWD(tempRepairedPath.pathCells[i]) == 1)
                 {
                     finalRepairedPath.pathCells.AddRange(PathGenerator.Instance.BypassObstacle(tempRepairedPath.pathCells[i - 1], tempRepairedPath.pathCells[i + 1], tempRepairedPath.pathCells[i]));
                     i++;
@@ -114,7 +114,7 @@ namespace Optimization
             return finalRepairedPath;
         }
 
-        private bool isCellOutOfBounds((int x,int y) cell)
+        private bool isCellOutOfBounds((int x, int y) cell)
         {
             return cell.x >= SimulationData.Instance.SimulationGrid.size ||
                 cell.y >= SimulationData.Instance.SimulationGrid.size ||

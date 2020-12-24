@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Optimization
 {
@@ -63,7 +60,6 @@ namespace Optimization
 
         }
 
-
         public static void PrintPaths(List<Path> paths)
         {
             int i = 0;
@@ -71,7 +67,7 @@ namespace Optimization
             {
                 Console.WriteLine();
                 Console.Write(i++ + ": ");
-                foreach ((int x,int y) cell in path.pathCells)
+                foreach ((int x, int y) cell in path.pathCells)
                 {
                     Console.Write($"({cell.x},{cell.y})>");
                 }

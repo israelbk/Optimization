@@ -48,10 +48,10 @@ namespace Optimization
         public List<(int, int)> BypassObstacle((int x, int y) from, (int x, int y) to, (int x, int y) obstacle)
         {
             List<(int, int)> bypassedCells = new List<(int, int)>();
-            (int x,int y) currentIndex = from;
-            while(!(currentIndex.x == to.x && currentIndex.y == to.y))
+            (int x, int y) currentIndex = from;
+            while (!(currentIndex.x == to.x && currentIndex.y == to.y))
             {
-                (int x,int y) tempCell = getNextRandomCell(currentIndex, to);
+                (int x, int y) tempCell = getNextRandomCell(currentIndex, to);
                 if (tempCell.x == obstacle.x && tempCell.y == obstacle.y)
                     continue;
                 currentIndex = tempCell;
@@ -77,7 +77,6 @@ namespace Optimization
 
             return newPath;
         }
-
         private Path generateXMonotonePath((int x, int y) sIndex, (int x, int y) dIndex)
         {
             Path newPath = initializePath(sIndex);
@@ -138,7 +137,6 @@ namespace Optimization
             newPath.pathCells.Add(sIndex);
             return newPath;
         }
-
 
         /// <summary>
         ///    3  4  6
