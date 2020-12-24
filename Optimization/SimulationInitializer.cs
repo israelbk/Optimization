@@ -27,26 +27,26 @@ namespace Optimization
             SimulationData simulationData = SimulationData.Instance;
 
             Console.WriteLine("Enter the size of the simulation board");
-            simulationData.simulationBoardSize = int.Parse(Console.ReadLine());
+            simulationData.SimulationBoardSize = int.Parse(Console.ReadLine());
             Console.WriteLine("Enter the amount of obstacles to create");
-            simulationData.simulationGrid = new Grid(simulationData.simulationBoardSize, int.Parse(Console.ReadLine()));
+            simulationData.SimulationGrid = new Grid(simulationData.SimulationBoardSize, int.Parse(Console.ReadLine()));
 
             Console.WriteLine("Should export grid to file? Y/N");
             if(Console.ReadLine() == "Y")
-                File.WriteAllText(gridFilePath, JsonConvert.SerializeObject(simulationData.simulationGrid));
+                File.WriteAllText(gridFilePath, JsonConvert.SerializeObject(simulationData.SimulationGrid));
 
             Console.WriteLine("Enter the size of the population to work with");
-            simulationData.initialPopulationSize = int.Parse(Console.ReadLine());
+            simulationData.InitialPopulationSize = int.Parse(Console.ReadLine());
 
             Console.WriteLine("Enter source cell (x,y)");
-            simulationData.sourceCell = GetCellFromString(Console.ReadLine());
+            simulationData.SourceCell = GetCellFromString(Console.ReadLine());
 
             Console.WriteLine("Enter destination cell (x,y)");
-            simulationData.destinationCell = GetCellFromString(Console.ReadLine());
+            simulationData.DestinationCell = GetCellFromString(Console.ReadLine());
 
 
             Console.WriteLine("Enter amount of generation to run the simulation");
-            simulationData.generationAmount = int.Parse(Console.ReadLine());
+            simulationData.GenerationAmount = int.Parse(Console.ReadLine());
         }
 
         private static (int,int) GetCellFromString(string cellString)
@@ -61,12 +61,12 @@ namespace Optimization
         private static void setDataFromConfig()
         {
             SimulationData simulationData = SimulationData.Instance;
-            simulationData.initialPopulationSize = int.Parse(ConfigurationManager.AppSettings["initialPopulationSize"]);
-            simulationData.generationAmount = int.Parse(ConfigurationManager.AppSettings["generationAmount"]);
-            simulationData.sourceCell = GetCellFromString(ConfigurationManager.AppSettings["sourceCell"]); 
-            simulationData.destinationCell = GetCellFromString(ConfigurationManager.AppSettings["destinationCell"]);
-            simulationData.simulationGrid = JsonConvert.DeserializeObject<Grid>(File.ReadAllText(gridFilePath));
-            simulationData.simulationBoardSize = simulationData.simulationGrid.size;
+            simulationData.InitialPopulationSize = int.Parse(ConfigurationManager.AppSettings["initialPopulationSize"]);
+            simulationData.GenerationAmount = int.Parse(ConfigurationManager.AppSettings["generationAmount"]);
+            simulationData.SourceCell = GetCellFromString(ConfigurationManager.AppSettings["sourceCell"]); 
+            simulationData.DestinationCell = GetCellFromString(ConfigurationManager.AppSettings["destinationCell"]);
+            simulationData.SimulationGrid = JsonConvert.DeserializeObject<Grid>(File.ReadAllText(gridFilePath));
+            simulationData.SimulationBoardSize = simulationData.SimulationGrid.size;
         }
     }
 }

@@ -9,15 +9,14 @@ namespace Optimization
 {
     class MooAlgorithm
     {
-        List<(Path path, (double f1, double f2) fitness)> pathsPopulation { get; set; }
-        private Stopwatch watch { get; set; }
+         private Stopwatch watch { get; set; }
         private long initalPopulationTime { get; set; }
 
         public MooAlgorithm()
         {
             watch = new Stopwatch();
             watch.Start();
-            pathsPopulation = PathGenerator.Instance.GetInitialPaths();
+            PathGenerator.Instance.GetInitialPaths();
             watch.Stop();
             initalPopulationTime = watch.ElapsedMilliseconds;
             watch.Reset();
@@ -27,16 +26,16 @@ namespace Optimization
         internal void RunSimulation()
         {
             // Validate simulation data.
-            if (isCellOutOfBounds(SimulationData.Instance.sourceCell) ||
-                         isCellOutOfBounds(SimulationData.Instance.sourceCell) ||
-                         SimulationData.Instance.simulationGrid.GetCellWD(SimulationData.Instance.sourceCell) == 1 ||
-                         SimulationData.Instance.simulationGrid.GetCellWD(SimulationData.Instance.destinationCell) == 1)
+            if (isCellOutOfBounds(SimulationData.Instance.SourceCell) ||
+                         isCellOutOfBounds(SimulationData.Instance.SourceCell) ||
+                         SimulationData.Instance.SimulationGrid.GetCellWD(SimulationData.Instance.SourceCell) == 1 ||
+                         SimulationData.Instance.SimulationGrid.GetCellWD(SimulationData.Instance.DestinationCell) == 1)
             {
                 Console.WriteLine("Source Or destination cells are not valid, exiting...");
                 return;
             }
 
-            int generationCount = SimulationData.Instance.generationAmount;
+            int generationCount = SimulationData.Instance.GenerationAmount;
             while (generationCount-- > 0)
             {
                 PathRepair();
@@ -58,16 +57,20 @@ namespace Optimization
 
         private void EvaluatePaths()
         {
-            throw new NotImplementedException();
+            // Reset fitnesses.
+            SimulationData.Instance.Fitnesses = new Dictionary<int, (int f1, int f2)>();
+            foreach (var path in SimulationData.Instance.PathsPopulation)
+                SimulationData.Instance.Fitnesses.Add(path.pathId, GetPathFitnessEvaluation(path));
         }
 
         private void PathRepair()
         {
-            List<(Path path, (double f1, double f2) fitness)> repairedPopulation = new List<(Path path, (double f1, double f2) fitness)>();
-            foreach (var path in pathsPopulation)
+            List<Path> repairedPopulation = new List<Path>();
+            foreach (var path in SimulationData.Instance.PathsPopulation)
             {
-                repairedPopulation.Add((RepairSinglePath(path.path), path.fitness));
+                repairedPopulation.Add(RepairSinglePath(path));
             }
+            SimulationData.Instance.PathsPopulation = repairedPopulation;
         }
 
         private Path RepairSinglePath(Path path)
@@ -90,14 +93,14 @@ namespace Optimization
             }
 
             // Connects last item to destination (if it's already connected nothig will happen).
-            tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.connectCellsMonotony(tempRepairedPath.pathCells.Last(), SimulationData.Instance.destinationCell));
+            tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.connectCellsMonotony(tempRepairedPath.pathCells.Last(), SimulationData.Instance.DestinationCell));
 
 
             // ObstacleRepair
             for (int i = 0; i < tempRepairedPath.pathCells.Count; i++)
             {
                 // Cell is obstacle.
-                if(SimulationData.Instance.simulationGrid.GetCellWD(tempRepairedPath.pathCells[i]) == 1)
+                if(SimulationData.Instance.SimulationGrid.GetCellWD(tempRepairedPath.pathCells[i]) == 1)
                 {
                     finalRepairedPath.pathCells.AddRange(PathGenerator.Instance.BypassObstacle(tempRepairedPath.pathCells[i - 1], tempRepairedPath.pathCells[i + 1], tempRepairedPath.pathCells[i]));
                     i++;
@@ -113,14 +116,14 @@ namespace Optimization
 
         private bool isCellOutOfBounds((int x,int y) cell)
         {
-            return cell.x >= SimulationData.Instance.simulationGrid.size ||
-                cell.y >= SimulationData.Instance.simulationGrid.size ||
+            return cell.x >= SimulationData.Instance.SimulationGrid.size ||
+                cell.y >= SimulationData.Instance.SimulationGrid.size ||
                 cell.x < 0 || cell.y < 0;
         }
 
         private (double, double) GetPathFitnessEvaluation(Path pathToEvaluate)
         {
-            Grid grid = SimulationData.Instance.simulationGrid;
+            Grid grid = SimulationData.Instance.SimulationGrid;
             double outOfBoundryCellsCount = 0;
             double obstaclesCellsCount = 0;
             double pathSumWD = 0;
@@ -146,7 +149,7 @@ namespace Optimization
                 f1 = 1;
             else
             {
-                f1 = (grid.size * grid.size) - pathsPopulation.Count; // (n^2 -c)
+                f1 = (grid.size * grid.size) - SimulationData.Instance.InitialPopulationSize; // (n^2 -c)
 
                 if (obstaclesCellsCount != 0)
                     f1 /= (20.0 * obstaclesCellsCount); // (n^2 -c) / (20I)

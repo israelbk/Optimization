@@ -18,23 +18,20 @@ namespace Optimization
 
         public static PathGenerator Instance { get { return instance; } }
 
-        public List<(Path path, (double f1, double f2) fitness)> GetInitialPaths()
+        public void GetInitialPaths()
         {
-            List<(Path path, (double f1, double f2) fitness)> initialPaths = new List<(Path path, (double f1, double f2) fitness)>(SimulationData.Instance.initialPopulationSize);
-
-            Path xMonotone = generateXMonotonePath(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell);
-            Path yMonotone = generateYMonotonePath(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell);
+            Path xMonotone = generateXMonotonePath(SimulationData.Instance.SourceCell, SimulationData.Instance.DestinationCell);
+            Path yMonotone = generateYMonotonePath(SimulationData.Instance.SourceCell, SimulationData.Instance.DestinationCell);
             monotonePathLength = xMonotone.pathCells.Count;
 
-            initialPaths.Add((xMonotone,(0,0)));
-            initialPaths.Add((xMonotone, (0, 0)));
+            SimulationData.Instance.PathsPopulation.Add(xMonotone);
+            SimulationData.Instance.PathsPopulation.Add(yMonotone);
 
-            int randomPathsAmount = SimulationData.Instance.initialPopulationSize - 2;
+            int randomPathsAmount = SimulationData.Instance.InitialPopulationSize - 2;
             while (randomPathsAmount-- > 0)
-                initialPaths.Add((generateRandomPath(SimulationData.Instance.sourceCell, SimulationData.Instance.destinationCell),(0,0)));
-
-            return initialPaths;
+                SimulationData.Instance.PathsPopulation.Add(generateRandomPath(SimulationData.Instance.SourceCell, SimulationData.Instance.DestinationCell));
         }
+
         public List<(int, int)> connectCellsMonotony((int, int) from, (int, int) to, bool? isXmonotone = null)
         {
             if (!isXmonotone.HasValue)

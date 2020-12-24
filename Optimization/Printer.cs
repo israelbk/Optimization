@@ -10,7 +10,7 @@ namespace Optimization
     {
         public static void PrintGrid()
         {
-            Grid grid = SimulationData.Instance.simulationGrid;
+            Grid grid = SimulationData.Instance.SimulationGrid;
             Console.WriteLine();
             Console.Write('\t');
             for (int i = 0; i < grid.size; i++)
@@ -54,15 +54,12 @@ namespace Optimization
 
         public static void PrintMetaData()
         {
-
             // Prints the source and destination of the path.
             Console.WriteLine("\n");
             Console.WriteLine($"Calculating path from " +
-               $"({SimulationData.Instance.sourceCell.Item1},{SimulationData.Instance.sourceCell.Item2})" +
-               $" to ({SimulationData.Instance.destinationCell.Item1},{SimulationData.Instance.destinationCell.Item2})");
+               $"({SimulationData.Instance.SourceCell.Item1},{SimulationData.Instance.SourceCell.Item2})" +
+               $" to ({SimulationData.Instance.DestinationCell.Item1},{SimulationData.Instance.DestinationCell.Item2})");
             Console.WriteLine("\n");
-
-
 
         }
 

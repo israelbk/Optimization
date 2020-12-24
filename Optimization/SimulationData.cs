@@ -1,14 +1,19 @@
 ﻿
+using System.Collections.Generic;
+
 namespace Optimization
 {
     class SimulationData
     {
-        public int simulationBoardSize { get; set; }
-        public (int, int) sourceCell { get; set; }
-        public (int, int) destinationCell { get; set; }
-        public int initialPopulationSize { get; set; }
-        public int generationAmount { get; set; }
-        public Grid simulationGrid { get; set; }
+        public int SimulationBoardSize { get; set; }
+        public (int, int) SourceCell { get; set; }
+        public (int, int) DestinationCell { get; set; }
+        public int InitialPopulationSize { get; set; }
+        public int GenerationAmount { get; set; }
+        public Grid SimulationGrid { get; set; }
+        public List<Path> PathsPopulation { get; set; }
+        public Dictionary<int,(double f1, double f2)> Fitnesses { get; set; }
+
 
         private static SimulationData instance = new SimulationData();
 
