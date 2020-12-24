@@ -34,7 +34,7 @@ namespace Optimization
                 File.WriteAllText(gridFilePath, JsonConvert.SerializeObject(simulationData.SimulationGrid));
 
             Console.WriteLine("Enter the size of the population to work with");
-            simulationData.InitialPopulationSize = int.Parse(Console.ReadLine());
+            simulationData.PopulationSize = int.Parse(Console.ReadLine());
 
             Console.WriteLine("Enter source cell (x,y)");
             simulationData.SourceCell = GetCellFromString(Console.ReadLine());
@@ -58,7 +58,7 @@ namespace Optimization
         private static void setDataFromConfig()
         {
             SimulationData simulationData = SimulationData.Instance;
-            simulationData.InitialPopulationSize = int.Parse(ConfigurationManager.AppSettings["initialPopulationSize"]);
+            simulationData.PopulationSize = int.Parse(ConfigurationManager.AppSettings["initialPopulationSize"]);
             simulationData.GenerationAmount = int.Parse(ConfigurationManager.AppSettings["generationAmount"]);
             simulationData.SourceCell = GetCellFromString(ConfigurationManager.AppSettings["sourceCell"]);
             simulationData.DestinationCell = GetCellFromString(ConfigurationManager.AppSettings["destinationCell"]);

@@ -9,7 +9,7 @@ namespace Optimization
     {
         private Stopwatch watch { get; set; }
         private long initalPopulationTime { get; set; }
-        Random random;
+        private Random random;
 
         public MooAlgorithm()
         {
@@ -40,37 +40,64 @@ namespace Optimization
             {
                 PathRepair();
                 EvaluatePaths();
-                SelectionMechanism();
-                GeneticOperators();
+                CalcRank();
+                GeneticOperators(SelectionMechanism());
             }
         }
 
-        private void GeneticOperators()
+        private void CalcRank()
+        {
+            foreach (var fitness in SimulationData.Instance.Fitnesses)
+            {
+                // Reset old ranks.
+                SimulationData.Instance.Ranks = new Dictionary<int, int>();
+                int dominatedByCount = 0;
+                foreach (var otherPathFitness in SimulationData.Instance.Fitnesses.Values)
+                    if (otherPathFitness.f1 > fitness.Value.f1 && otherPathFitness.f2 >= fitness.Value.f2 || otherPathFitness.f2 > fitness.Value.f2 && otherPathFitness.f1 >= fitness.Value.f1)
+                        dominatedByCount++;
+                SimulationData.Instance.Ranks.Add(fitness.Key, SimulationData.Instance.PopulationSize - dominatedByCount);
+            }
+        }
+
+        private void GeneticOperators(List<Path> selectedPath)
         {
             throw new NotImplementedException();
         }
 
-        private void SelectionMechanism()
+        private List<Path> SelectionMechanism()
         {
-            var paths = SimulationData.Instance.Fitnesses.Keys.ToArray().OrderBy(c => random.Next()).ToArray();
+            List<Path> selectedPaths = new List<Path>();
+            // Shuffles the paths to achieve tournaament selection.
+            var pathsKeys = SimulationData.Instance.Fitnesses.Keys.ToArray().OrderBy(c => random.Next()).ToArray();
+
+            // Iterate over pairs.
+            for (int i = 0; i < SimulationData.Instance.PopulationSize; i += 2)
+            {
+                if (SimulationData.Instance.Ranks[pathsKeys[i]] >= SimulationData.Instance.Ranks[pathsKeys[i + 1]])
+                    selectedPaths.Add(GetPathById(pathsKeys[i]));
+                else
+                    selectedPaths.Add(GetPathById(pathsKeys[i+1]));
+            }
+
+            return selectedPaths;
         }
 
         private void EvaluatePaths()
         {
             // Reset fitnesses.
             SimulationData.Instance.Fitnesses = new Dictionary<int, (double f1, double f2)>();
-            foreach (var path in SimulationData.Instance.PathsPopulation)
+            foreach (var path in SimulationData.Instance.PopulationPaths)
                 SimulationData.Instance.Fitnesses.Add(path.pathId, GetPathFitnessEvaluation(path));
         }
 
         private void PathRepair()
         {
             List<Path> repairedPopulation = new List<Path>();
-            foreach (var path in SimulationData.Instance.PathsPopulation)
+            foreach (var path in SimulationData.Instance.PopulationPaths)
             {
                 repairedPopulation.Add(RepairSinglePath(path));
             }
-            SimulationData.Instance.PathsPopulation = repairedPopulation;
+            SimulationData.Instance.PopulationPaths = repairedPopulation;
         }
 
         private Path RepairSinglePath(Path path)
@@ -149,7 +176,7 @@ namespace Optimization
                 f1 = 1;
             else
             {
-                f1 = (grid.size * grid.size) - SimulationData.Instance.InitialPopulationSize; // (n^2 -c)
+                f1 = (grid.size * grid.size) - SimulationData.Instance.PopulationSize; // (n^2 -c)
 
                 if (obstaclesCellsCount != 0)
                     f1 /= (20.0 * obstaclesCellsCount); // (n^2 -c) / (20I)
@@ -158,6 +185,16 @@ namespace Optimization
             f2 = (grid.size * grid.size) - pathSumWD;
 
             return (f1, f2);
+        }
+
+        private Path GetPathById(int id)
+        {
+            foreach (var path in SimulationData.Instance.PopulationPaths)
+                if (path.pathId == id)
+                    return path;
+
+            Console.WriteLine($"No corresponding path with id {id} was found");
+            return null;
         }
     }
 }

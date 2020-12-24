@@ -24,12 +24,12 @@ namespace Optimization
             Path yMonotone = generateYMonotonePath(SimulationData.Instance.SourceCell, SimulationData.Instance.DestinationCell);
             monotonePathLength = xMonotone.pathCells.Count;
 
-            SimulationData.Instance.PathsPopulation.Add(xMonotone);
-            SimulationData.Instance.PathsPopulation.Add(yMonotone);
+            SimulationData.Instance.PopulationPaths.Add(xMonotone);
+            SimulationData.Instance.PopulationPaths.Add(yMonotone);
 
-            int randomPathsAmount = SimulationData.Instance.InitialPopulationSize - 2;
+            int randomPathsAmount = SimulationData.Instance.PopulationSize - 2;
             while (randomPathsAmount-- > 0)
-                SimulationData.Instance.PathsPopulation.Add(generateRandomPath(SimulationData.Instance.SourceCell, SimulationData.Instance.DestinationCell));
+                SimulationData.Instance.PopulationPaths.Add(generateRandomPath(SimulationData.Instance.SourceCell, SimulationData.Instance.DestinationCell));
         }
 
         public List<(int, int)> connectCellsMonotony((int, int) from, (int, int) to, bool? isXmonotone = null)
