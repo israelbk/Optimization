@@ -61,7 +61,45 @@ namespace Optimization
 
         private void GeneticOperators(List<Path> selectedPath)
         {
+            // Resets the population to contain only the winners of the tournament selection.
+            SimulationData.Instance.PopulationPaths = new List<Path>(selectedPath);
+
+            for (int i = 0; i < selectedPath.Count; i += 2)
+            {
+                SimulationData.Instance.PopulationPaths.AddRange(MutatePaths(GetNewPathsGenetically(selectedPath[i], selectedPath[i + 1])))
+            }
+        }
+
+        // Generates 2 new paths out of two parents paths
+        private IEnumerable<Path> GetNewPathsGenetically(Path path1, Path path2)
+        {
             throw new NotImplementedException();
+        }
+
+        private IEnumerable<Path> MutatePaths(IEnumerable<Path> paths)
+        {
+            List<Path> mutatedPaths = new List<Path>();
+            foreach (var path in paths)
+            {
+                // Should mutate.
+                if (random.NextDouble() < SimulationData.Instance.MutationProbability)
+                {
+                    // Selects randomally cell to mutate.
+                    int mutatedCellFromIndex = random.Next(path.pathCells.Count - 1);
+                    int mutatedCellToIndex = random.Next(mutatedCellFromIndex, path.pathCells.Count);
+
+                    Path mutatedPath = new Path();
+                    // Copies all the cell untill the mutation.
+                    mutatedPath.pathCells.AddRange(path.pathCells.GetRange(0, mutatedCellFromIndex));
+                    // Randomlly connects the mutation points.
+                    mutatedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsRandomally(path.pathCells[mutatedCellFromIndex], path.pathCells[mutatedCellToIndex]);
+                    mutatedPath.pathCells.AddRange(path.pathCells.GetRange(mutatedCellToIndex, path.pathCells.Count - mutatedCellToIndex));
+                    mutatedPaths.Add(mutatedPath);
+                }
+                else
+                    mutatedPaths.Add(path);
+            }
+            return mutatedPaths;
         }
 
         private List<Path> SelectionMechanism()
@@ -76,7 +114,7 @@ namespace Optimization
                 if (SimulationData.Instance.Ranks[pathsKeys[i]] >= SimulationData.Instance.Ranks[pathsKeys[i + 1]])
                     selectedPaths.Add(GetPathById(pathsKeys[i]));
                 else
-                    selectedPaths.Add(GetPathById(pathsKeys[i+1]));
+                    selectedPaths.Add(GetPathById(pathsKeys[i + 1]));
             }
 
             return selectedPaths;
@@ -113,14 +151,14 @@ namespace Optimization
                     int lastCellInBound = i - 1;
                     // Run while we still out of bounds or items left.
                     while (i < path.pathCells.Count - 1 && isCellOutOfBounds(path.pathCells[++i])) ;
-                    tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.connectCellsMonotony(path.pathCells[lastCellInBound], path.pathCells[i]));
+                    tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsMonotony(path.pathCells[lastCellInBound], path.pathCells[i]));
                 }
                 else
                     tempRepairedPath.pathCells.Add(path.pathCells[i]);
             }
 
             // Connects last item to destination (if it's already connected nothig will happen).
-            tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.connectCellsMonotony(tempRepairedPath.pathCells.Last(), SimulationData.Instance.DestinationCell));
+            tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsMonotony(tempRepairedPath.pathCells.Last(), SimulationData.Instance.DestinationCell));
 
 
             // ObstacleRepair

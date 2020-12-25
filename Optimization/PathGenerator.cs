@@ -20,6 +20,8 @@ namespace Optimization
 
         public void GetInitialPaths()
         {
+            SimulationData.Instance.PopulationPaths = new List<Path>();
+
             Path xMonotone = generateXMonotonePath(SimulationData.Instance.SourceCell, SimulationData.Instance.DestinationCell);
             Path yMonotone = generateYMonotonePath(SimulationData.Instance.SourceCell, SimulationData.Instance.DestinationCell);
             monotonePathLength = xMonotone.pathCells.Count;
@@ -32,7 +34,7 @@ namespace Optimization
                 SimulationData.Instance.PopulationPaths.Add(generateRandomPath(SimulationData.Instance.SourceCell, SimulationData.Instance.DestinationCell));
         }
 
-        public List<(int, int)> connectCellsMonotony((int, int) from, (int, int) to, bool? isXmonotone = null)
+        public List<(int, int)> ConnectCellsMonotony((int, int) from, (int, int) to, bool? isXmonotone = null)
         {
             if (!isXmonotone.HasValue)
                 isXmonotone = random.Next(2) == 1;
@@ -62,32 +64,40 @@ namespace Optimization
 
         private Path generateRandomPath((int x, int y) sIndex, (int x, int y) dIndex)
         {
-            var currentIndex = sIndex;
             Path newPath = initializePath(sIndex);
 
             int maxCellAmount = random.Next(monotonePathLength, monotonePathLength * 2);
 
-            for (int i = 0; i < maxCellAmount; i++)
-            {
-                currentIndex = getNextRandomCell(currentIndex, dIndex);
-                newPath.pathCells.Add(currentIndex);
-                if (currentIndex.x == dIndex.x && currentIndex.y == dIndex.y)
-                    return newPath;
-            }
+            newPath.pathCells.AddRange(ConnectCellsRandomally(sIndex, dIndex, maxCellAmount));
 
             return newPath;
         }
+
+        public List<(int, int)> ConnectCellsRandomally((int x, int y) from, (int x, int y) to, int limitIterations = -1)
+        {
+            var currentIndex = from;
+            List<(int, int)> randomCellsConnection = new List<(int, int)>();
+
+            while (limitIterations-- != 0 && (currentIndex.x != to.x || currentIndex.y != to.y))
+            {
+                currentIndex = getNextRandomCell(currentIndex, to);
+                randomCellsConnection.Add(currentIndex);
+            }
+
+            return randomCellsConnection;
+        }
+
         private Path generateXMonotonePath((int x, int y) sIndex, (int x, int y) dIndex)
         {
             Path newPath = initializePath(sIndex);
-            newPath.pathCells.AddRange(connectCellsMonotony(sIndex, dIndex, true));
+            newPath.pathCells.AddRange(ConnectCellsMonotony(sIndex, dIndex, true));
             return newPath;
         }
 
         private Path generateYMonotonePath((int x, int y) sIndex, (int x, int y) dIndex)
         {
             Path newPath = initializePath(sIndex);
-            newPath.pathCells.AddRange(connectCellsMonotony(sIndex, dIndex, false));
+            newPath.pathCells.AddRange(ConnectCellsMonotony(sIndex, dIndex, false));
             return newPath;
         }
 

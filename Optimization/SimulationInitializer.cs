@@ -45,6 +45,9 @@ namespace Optimization
 
             Console.WriteLine("Enter amount of generation to run the simulation");
             simulationData.GenerationAmount = int.Parse(Console.ReadLine());
+            
+            Console.WriteLine("Enter Mutation Probability for the simulation (0-1)");
+            simulationData.MutationProbability = double.Parse(Console.ReadLine());
         }
 
         private static (int, int) GetCellFromString(string cellString)
@@ -60,7 +63,8 @@ namespace Optimization
             SimulationData simulationData = SimulationData.Instance;
             simulationData.PopulationSize = int.Parse(ConfigurationManager.AppSettings["initialPopulationSize"]);
             simulationData.GenerationAmount = int.Parse(ConfigurationManager.AppSettings["generationAmount"]);
-            simulationData.SourceCell = GetCellFromString(ConfigurationManager.AppSettings["sourceCell"]);
+            simulationData.MutationProbability = double.Parse(ConfigurationManager.AppSettings["mutationProbability"]);
+           simulationData.SourceCell = GetCellFromString(ConfigurationManager.AppSettings["sourceCell"]);
             simulationData.DestinationCell = GetCellFromString(ConfigurationManager.AppSettings["destinationCell"]);
             simulationData.SimulationGrid = JsonConvert.DeserializeObject<Grid>(File.ReadAllText(gridFilePath));
             simulationData.SimulationBoardSize = simulationData.SimulationGrid.size;

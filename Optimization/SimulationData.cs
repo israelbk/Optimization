@@ -13,6 +13,7 @@ namespace Optimization
         public List<Path> PopulationPaths { get; set; }
         public Dictionary<int, (double f1, double f2)> Fitnesses { get; set; }
         public Dictionary<int, int> Ranks { get; set; }
+        public double MutationProbability { get; set; }
         private static SimulationData instance = new SimulationData();
         public static SimulationData Instance => instance;
         private SimulationData() { }
