@@ -49,13 +49,15 @@ namespace Optimization
 
         }
 
-        public static void PrintMetaData()
+        public static void PrintMetaData(long initalPopulationTime)
         {
             // Prints the source and destination of the path.
             Console.WriteLine("\n");
             Console.WriteLine($"Calculating path from " +
                $"({SimulationData.Instance.SourceCell.Item1},{SimulationData.Instance.SourceCell.Item2})" +
                $" to ({SimulationData.Instance.DestinationCell.Item1},{SimulationData.Instance.DestinationCell.Item2})");
+            Console.WriteLine("\n");
+            Console.WriteLine($"initialization time for {SimulationData.Instance.PopulationSize} paths took {initalPopulationTime} ms");
             Console.WriteLine("\n");
 
         }

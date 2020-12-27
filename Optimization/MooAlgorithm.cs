@@ -21,13 +21,14 @@ namespace Optimization
             initalPopulationTime = watch.ElapsedMilliseconds;
             watch.Reset();
 
+            Printer.PrintMetaData(initalPopulationTime);
         }
 
         internal void RunSimulation()
         {
             // Validate simulation data.
-            if (isCellOutOfBounds(SimulationData.Instance.SourceCell) ||
-                         isCellOutOfBounds(SimulationData.Instance.SourceCell) ||
+            if (IsCellOutOfBounds(SimulationData.Instance.SourceCell) ||
+                         IsCellOutOfBounds(SimulationData.Instance.SourceCell) ||
                          SimulationData.Instance.SimulationGrid.GetCellWD(SimulationData.Instance.SourceCell) == 1 ||
                          SimulationData.Instance.SimulationGrid.GetCellWD(SimulationData.Instance.DestinationCell) == 1)
             {
@@ -66,16 +67,113 @@ namespace Optimization
 
             for (int i = 0; i < selectedPath.Count; i += 2)
             {
-                SimulationData.Instance.PopulationPaths.AddRange(MutatePaths(GetNewPathsGenetically(selectedPath[i], selectedPath[i + 1])))
+                SimulationData.Instance.PopulationPaths.AddRange(MutatePaths(GetNewPathsGenetically(selectedPath[i], selectedPath[i + 1])));
             }
         }
 
-        // Generates 2 new paths out of two parents paths
+        /// <summary>
+        /// Finds all mutual cells of the paths, selects one randomally, and generate two new path by
+        /// replacing the half paths.
+        /// for example:
+        /// for the paths.
+        /// (1,1)->(1,2)->(1,3)->(2,3)->(3,4)-(4,4)
+        /// (1,1)->(2,2)->(2,3)->(3,3)->(3,4)-(4,4)
+        /// we will randomise (2,3) & (3,4), assuming that (2,3) is selected as turning point the new child path will be:
+        /// (1,1)->(1,2)->(1,3)->(2,3)->(3,3)->(3,4)-(4,4) 
+        /// (1,1)->(2,2)->(2,3)->(3,4)-(4,4)
+        /// </summary>
+        /// <param name="path1"></param>
+        /// <param name="path2"></param>
+        /// <returns></returns>
         private IEnumerable<Path> GetNewPathsGenetically(Path path1, Path path2)
         {
-            throw new NotImplementedException();
+            List<(int, int)> mutualIndexes = GetMutualPathsCells(path1, path2);
+            // No common cells
+            if (mutualIndexes.Count == 0)
+                return GetMonotoneGeneticPaths(path1, path2);
+
+            // Else, there is connection spots between the cells.
+            var randomMutualCell = mutualIndexes.ElementAt(random.Next(mutualIndexes.Count));
+            var path1MutualIndex = path1.pathCells.IndexOf(randomMutualCell);
+            var path2MutualIndex = path2.pathCells.IndexOf(randomMutualCell);
+
+            List<Path> childPaths = new List<Path>();
+            Path newPath1 = new Path();
+            Path newPath2 = new Path();
+
+            var path1FirstHalf = newPath1.pathCells.Take(path1MutualIndex);
+            var path1SecondHalf = newPath1.pathCells.Skip(path1MutualIndex);
+            var path2FirstHalf = newPath2.pathCells.Take(path2MutualIndex);
+            var path2SecondHalf = newPath2.pathCells.Take(path2MutualIndex);
+
+            newPath1.pathCells.AddRange(path1FirstHalf);
+            newPath1.pathCells.AddRange(path2SecondHalf);
+
+            newPath2.pathCells.AddRange(path2FirstHalf);
+            newPath2.pathCells.AddRange(path1SecondHalf);
+
+            childPaths.Add(newPath1);
+            childPaths.Add(newPath2);
+
+            return childPaths;
         }
 
+
+        /// <summary>
+        /// Selectd a the midlle of the two path, and randomly connects the halfs. 
+        /// </summary>
+        /// <param name="path1"></param>
+        /// <param name="path2"></param>
+        /// <returns></returns>
+        private IEnumerable<Path> GetMonotoneGeneticPaths(Path path1, Path path2)
+        {
+            List<Path> childPaths = new List<Path>();
+            Path newPath1 = new Path();
+            Path newPath2 = new Path();
+
+            var path1FirstHalf = newPath1.pathCells.Take(newPath1.pathCells.Count / 2);
+            var path1SecondHalf = newPath1.pathCells.Skip(newPath1.pathCells.Count / 2);
+            var path2FirstHalf = newPath2.pathCells.Take(newPath1.pathCells.Count / 2);
+            var path2SecondHalf = newPath2.pathCells.Take(newPath1.pathCells.Count / 2);
+
+            newPath1.pathCells.AddRange(path1FirstHalf);
+            newPath1.pathCells.AddRange(PathGenerator.Instance.ConnectCellsRandomally(path1FirstHalf.Last(), path2SecondHalf.First()));
+            path2SecondHalf.ToList().RemoveAt(0);
+            newPath1.pathCells.AddRange(path2SecondHalf);
+
+            newPath2.pathCells.AddRange(path2FirstHalf);
+            newPath2.pathCells.AddRange(PathGenerator.Instance.ConnectCellsRandomally(path2FirstHalf.Last(), path1SecondHalf.First()));
+            path1SecondHalf.ToList().RemoveAt(0);
+            newPath2.pathCells.AddRange(path1SecondHalf);
+
+            childPaths.Add(newPath1);
+            childPaths.Add(newPath2);
+
+            return childPaths;
+        }
+
+        private List<(int, int)> GetMutualPathsCells(Path path1, Path path2)
+        {
+            List<(int, int)> mutualPathsCells = new List<(int, int)>();
+            foreach (var cell in path1.pathCells)
+            {
+                // Not adding source and destination cells.
+                if (cell == SimulationData.Instance.SourceCell || cell == SimulationData.Instance.DestinationCell)
+                    continue;
+                foreach (var otherPathCell in path2.pathCells)
+                    if (cell == otherPathCell)
+                        mutualPathsCells.Add(cell);
+            }
+            return mutualPathsCells;
+        }
+
+        /// <summary>
+        /// Mutation works as following:
+        /// with a probability of (MutationProbability) if a path is selected to be mutated, we choose two random points in the path
+        /// and connects them randomly so a new path is generated and we avoid finding the local optimum. 
+        /// </summary>
+        /// <param name="paths"></param>
+        /// <returns></returns>
         private IEnumerable<Path> MutatePaths(IEnumerable<Path> paths)
         {
             List<Path> mutatedPaths = new List<Path>();
@@ -92,7 +190,7 @@ namespace Optimization
                     // Copies all the cell untill the mutation.
                     mutatedPath.pathCells.AddRange(path.pathCells.GetRange(0, mutatedCellFromIndex));
                     // Randomlly connects the mutation points.
-                    mutatedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsRandomally(path.pathCells[mutatedCellFromIndex], path.pathCells[mutatedCellToIndex]);
+                    mutatedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsRandomally(path.pathCells[mutatedCellFromIndex], path.pathCells[mutatedCellToIndex]));
                     mutatedPath.pathCells.AddRange(path.pathCells.GetRange(mutatedCellToIndex, path.pathCells.Count - mutatedCellToIndex));
                     mutatedPaths.Add(mutatedPath);
                 }
@@ -141,16 +239,15 @@ namespace Optimization
         private Path RepairSinglePath(Path path)
         {
             Path tempRepairedPath = new Path();
-            Path finalRepairedPath = new Path();
 
             // OutboundCell repair
             for (int i = 0; i < path.pathCells.Count; i++)
             {
-                if (isCellOutOfBounds(path.pathCells[i]))
+                if (IsCellOutOfBounds(path.pathCells[i]))
                 {
                     int lastCellInBound = i - 1;
                     // Run while we still out of bounds or items left.
-                    while (i < path.pathCells.Count - 1 && isCellOutOfBounds(path.pathCells[++i])) ;
+                    while (i < path.pathCells.Count - 1 && IsCellOutOfBounds(path.pathCells[++i])) ;
                     tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsMonotony(path.pathCells[lastCellInBound], path.pathCells[i]));
                 }
                 else
@@ -160,13 +257,16 @@ namespace Optimization
             // Connects last item to destination (if it's already connected nothig will happen).
             tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsMonotony(tempRepairedPath.pathCells.Last(), SimulationData.Instance.DestinationCell));
 
+            Path finalRepairedPath = new Path();
 
             // ObstacleRepair
             for (int i = 0; i < tempRepairedPath.pathCells.Count; i++)
-            {
+            {         
                 // Cell is obstacle.
-                if (SimulationData.Instance.SimulationGrid.GetCellWD(tempRepairedPath.pathCells[i]) == 1)
+                if (!IsCellOutOfBounds(tempRepairedPath.pathCells[i]) && SimulationData.Instance.SimulationGrid.GetCellWD(tempRepairedPath.pathCells[i]) == 1)
                 {
+                    if (i + 1 == tempRepairedPath.pathCells.Count)
+                        throw new Exception("Cannot access out of bounds cells");
                     finalRepairedPath.pathCells.AddRange(PathGenerator.Instance.BypassObstacle(tempRepairedPath.pathCells[i - 1], tempRepairedPath.pathCells[i + 1], tempRepairedPath.pathCells[i]));
                     i++;
                     continue;
@@ -179,7 +279,7 @@ namespace Optimization
             return finalRepairedPath;
         }
 
-        private bool isCellOutOfBounds((int x, int y) cell)
+        private bool IsCellOutOfBounds((int x, int y) cell)
         {
             return cell.x >= SimulationData.Instance.SimulationGrid.size ||
                 cell.y >= SimulationData.Instance.SimulationGrid.size ||
@@ -197,7 +297,7 @@ namespace Optimization
             foreach ((int x, int y) cell in pathToEvaluate.pathCells)
             {
                 // Cell is out of boundries.
-                if (isCellOutOfBounds(cell))
+                if (IsCellOutOfBounds(cell))
                     outOfBoundryCellsCount++;
                 else
                 {
