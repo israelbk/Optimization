@@ -62,10 +62,10 @@ namespace Optimization
 
         }
 
-        public static void PrintPaths(List<Path> paths)
+        public static void PrintPaths()
         {
             int i = 0;
-            foreach (var path in paths)
+            foreach (var path in SimulationData.Instance.PopulationPaths)
             {
                 Console.WriteLine();
                 Console.Write(i++ + ": ");
@@ -73,6 +73,7 @@ namespace Optimization
                 {
                     Console.Write($"({cell.x},{cell.y})>");
                 }
+                Console.Write($" Rank: {SimulationData.Instance.Ranks[path.pathId]}");
             }
 
             Console.WriteLine();

@@ -46,11 +46,11 @@ namespace Optimization
             return pathCells;
         }
 
-        public List<(int, int)> BypassObstacle((int x, int y) from, (int x, int y) to, (int x, int y) obstacleCell)
+        public List<(int, int)> BypassObstacle((int x, int y) from, (int x, int y) to, (int x, int y) obstacleCell,int maxAttempts =10)
         {
             List<(int, int)> bypassedCells = new List<(int, int)>();
             (int x, int y) currentIndex = from;
-            while (!(currentIndex.x == to.x && currentIndex.y == to.y))
+            while (!(currentIndex.x == to.x && currentIndex.y == to.y) && (maxAttempts-- !=0))
             {
                 (int x, int y) tempCell = GetNextRandomCell(currentIndex, to);
                 if (tempCell == obstacleCell)

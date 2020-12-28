@@ -22,6 +22,16 @@ namespace Optimization
             watch.Reset();
 
             Printer.PrintMetaData(initalPopulationTime);
+            //InitializeRanks();
+        }
+
+        private void InitializeRanks()
+        {
+            SimulationData.Instance.Ranks = new Dictionary<int, int>();
+            foreach (var path in SimulationData.Instance.PopulationPaths)
+            {
+                SimulationData.Instance.Ranks.Add(path.pathId, -1);
+            }      
         }
 
         internal void RunSimulation()
@@ -42,16 +52,22 @@ namespace Optimization
                 PathRepair();
                 EvaluatePaths();
                 CalcRank();
+                Printer.PrintPaths();
                 GeneticOperators(SelectionMechanism());
             }
+
+            //CalcRank();
+            //Printer.PrintPaths();
+
         }
 
         private void CalcRank()
         {
+            SimulationData.Instance.Ranks = new Dictionary<int, int>();
+
             foreach (var fitness in SimulationData.Instance.Fitnesses)
             {
                 // Reset old ranks.
-                SimulationData.Instance.Ranks = new Dictionary<int, int>();
                 int dominatedByCount = 0;
                 foreach (var otherPathFitness in SimulationData.Instance.Fitnesses.Values)
                     if (otherPathFitness.f1 > fitness.Value.f1 && otherPathFitness.f2 >= fitness.Value.f2 || otherPathFitness.f2 > fitness.Value.f2 && otherPathFitness.f1 >= fitness.Value.f1)
@@ -101,10 +117,10 @@ namespace Optimization
             Path newPath1 = new Path();
             Path newPath2 = new Path();
 
-            var path1FirstHalf = newPath1.pathCells.Take(path1MutualIndex);
-            var path1SecondHalf = newPath1.pathCells.Skip(path1MutualIndex);
-            var path2FirstHalf = newPath2.pathCells.Take(path2MutualIndex);
-            var path2SecondHalf = newPath2.pathCells.Take(path2MutualIndex);
+            var path1FirstHalf = path1.pathCells.Take(path1MutualIndex);
+            var path1SecondHalf = path1.pathCells.Skip(path1MutualIndex);
+            var path2FirstHalf = path2.pathCells.Take(path2MutualIndex);
+            var path2SecondHalf = path2.pathCells.Skip(path2MutualIndex);
 
             newPath1.pathCells.AddRange(path1FirstHalf);
             newPath1.pathCells.AddRange(path2SecondHalf);
@@ -131,10 +147,10 @@ namespace Optimization
             Path newPath1 = new Path();
             Path newPath2 = new Path();
 
-            var path1FirstHalf = newPath1.pathCells.Take(newPath1.pathCells.Count / 2);
-            var path1SecondHalf = newPath1.pathCells.Skip(newPath1.pathCells.Count / 2);
-            var path2FirstHalf = newPath2.pathCells.Take(newPath1.pathCells.Count / 2);
-            var path2SecondHalf = newPath2.pathCells.Take(newPath1.pathCells.Count / 2);
+            var path1FirstHalf = path1.pathCells.Take(path1.pathCells.Count / 2);
+            var path1SecondHalf = path1.pathCells.Skip(path1.pathCells.Count / 2);
+            var path2FirstHalf = path2.pathCells.Take(path2.pathCells.Count / 2);
+            var path2SecondHalf = path2.pathCells.Skip(path2.pathCells.Count / 2);
 
             newPath1.pathCells.AddRange(path1FirstHalf);
             newPath1.pathCells.AddRange(PathGenerator.Instance.ConnectCellsRandomally(path1FirstHalf.Last(), path2SecondHalf.First()));
@@ -254,6 +270,14 @@ namespace Optimization
                     tempRepairedPath.pathCells.Add(path.pathCells[i]);
             }
 
+            // Connects items to source (if it's already connected nothig will happen).
+            if(SimulationData.Instance.SourceCell != tempRepairedPath.pathCells.First())
+            {
+                var oldFirst = tempRepairedPath.pathCells.First();
+                tempRepairedPath.pathCells.Insert(0, SimulationData.Instance.SourceCell);
+                tempRepairedPath.pathCells.InsertRange(0, PathGenerator.Instance.ConnectCellsMonotony(SimulationData.Instance.SourceCell, tempRepairedPath.pathCells.First()));
+                tempRepairedPath.pathCells.Remove(oldFirst);
+            }
             // Connects last item to destination (if it's already connected nothig will happen).
             tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsMonotony(tempRepairedPath.pathCells.Last(), SimulationData.Instance.DestinationCell));
 

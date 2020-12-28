@@ -8,6 +8,8 @@
             Printer.PrintGrid();
             MooAlgorithm alg = new MooAlgorithm();
             alg.RunSimulation();
+
+            System.Console.ReadKey();
         }
     }
 }
