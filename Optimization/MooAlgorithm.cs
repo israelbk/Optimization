@@ -22,16 +22,6 @@ namespace Optimization
             watch.Reset();
 
             Printer.PrintMetaData(initalPopulationTime);
-            //InitializeRanks();
-        }
-
-        private void InitializeRanks()
-        {
-            SimulationData.Instance.Ranks = new Dictionary<int, int>();
-            foreach (var path in SimulationData.Instance.PopulationPaths)
-            {
-                SimulationData.Instance.Ranks.Add(path.pathId, -1);
-            }      
         }
 
         internal void RunSimulation()
@@ -49,10 +39,13 @@ namespace Optimization
             int generationCount = SimulationData.Instance.GenerationAmount;
             while (generationCount-- > 0)
             {
+                if (generationCount % 10 == 0)
+                    Console.WriteLine($"Iteration: {SimulationData.Instance.GenerationAmount - generationCount}");
                 PathRepair();
                 EvaluatePaths();
                 CalcRank();
-                Printer.PrintPaths();
+                if (generationCount == 0)
+                    Printer.PrintPaths();
                 GeneticOperators(SelectionMechanism());
             }
 
@@ -271,7 +264,7 @@ namespace Optimization
             }
 
             // Connects items to source (if it's already connected nothig will happen).
-            if(SimulationData.Instance.SourceCell != tempRepairedPath.pathCells.First())
+            if (SimulationData.Instance.SourceCell != tempRepairedPath.pathCells.First())
             {
                 var oldFirst = tempRepairedPath.pathCells.First();
                 tempRepairedPath.pathCells.Insert(0, SimulationData.Instance.SourceCell);
@@ -285,7 +278,7 @@ namespace Optimization
 
             // ObstacleRepair
             for (int i = 0; i < tempRepairedPath.pathCells.Count; i++)
-            {         
+            {
                 // Cell is obstacle.
                 if (!IsCellOutOfBounds(tempRepairedPath.pathCells[i]) && SimulationData.Instance.SimulationGrid.GetCellWD(tempRepairedPath.pathCells[i]) == 1)
                 {

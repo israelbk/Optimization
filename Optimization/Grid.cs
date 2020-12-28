@@ -34,7 +34,7 @@ namespace Optimization
                     }
                     else
                     {
-                        cellsWD[i, j] = randomizer.NextDouble() < 0.5 ? 0 : Math.Round(random, 2);
+                        cellsWD[i, j] = randomizer.NextDouble() < 0.35 ? 0 : Math.Round(random, 2);
                     }
                 }
             }

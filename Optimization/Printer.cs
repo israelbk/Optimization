@@ -32,7 +32,10 @@ namespace Optimization
                 Console.Write('|');
                 for (int j = 0; j < grid.size; j++)
                 {
-                    Console.Write(grid.GetCellWD((i, j)) + "\t");
+                    if (grid.GetCellWD((i, j)) != 0 && grid.GetCellWD((i, j)) != 1)
+                        Console.Write(grid.GetCellWD((i, j)).ToString().Substring(1) + "\t");
+                    else
+                        Console.Write(grid.GetCellWD((i, j)) + "\t");
                 }
                 Console.Write('|');
                 Console.WriteLine();
