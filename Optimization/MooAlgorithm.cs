@@ -44,7 +44,7 @@ namespace Optimization
                 PathRepair();
                 EvaluatePaths();
                 CalcRank();
-                if (generationCount == 0)
+                if (generationCount % 10 == 0)
                     Printer.PrintPaths();
                 GeneticOperators(SelectionMechanism());
             }
@@ -52,6 +52,18 @@ namespace Optimization
             //CalcRank();
             //Printer.PrintPaths();
 
+        }
+
+        private bool isIncorrectPath(Path path)
+        {
+
+            for (int i = 0; i < path.pathCells.Count - 1; i++)
+            {
+                if (Math.Abs(path.pathCells[i].Item1 - path.pathCells[i + 1].Item1) > 1 || Math.Abs(path.pathCells[i].Item2 - path.pathCells[i + 1].Item2) > 1)
+                    return true;
+            }
+
+            return false;
         }
 
         private void CalcRank()
@@ -170,8 +182,13 @@ namespace Optimization
                 if (cell == SimulationData.Instance.SourceCell || cell == SimulationData.Instance.DestinationCell)
                     continue;
                 foreach (var otherPathCell in path2.pathCells)
+                {
                     if (cell == otherPathCell)
+                    {
                         mutualPathsCells.Add(cell);
+                        continue;
+                    }
+                }
             }
             return mutualPathsCells;
         }
@@ -192,20 +209,22 @@ namespace Optimization
                 if (random.NextDouble() < SimulationData.Instance.MutationProbability)
                 {
                     // Selects randomally cell to mutate.
-                    int mutatedCellFromIndex = random.Next(path.pathCells.Count - 1);
+                    int mutatedCellFromIndex = random.Next(1, path.pathCells.Count - 1);
                     int mutatedCellToIndex = random.Next(mutatedCellFromIndex, path.pathCells.Count);
 
                     Path mutatedPath = new Path();
                     // Copies all the cell untill the mutation.
                     mutatedPath.pathCells.AddRange(path.pathCells.GetRange(0, mutatedCellFromIndex));
                     // Randomlly connects the mutation points.
-                    mutatedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsRandomally(path.pathCells[mutatedCellFromIndex], path.pathCells[mutatedCellToIndex]));
+                    mutatedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsRandomally(path.pathCells[mutatedCellFromIndex - 1], path.pathCells[mutatedCellToIndex]));
                     mutatedPath.pathCells.AddRange(path.pathCells.GetRange(mutatedCellToIndex, path.pathCells.Count - mutatedCellToIndex));
                     mutatedPaths.Add(mutatedPath);
                 }
                 else
                     mutatedPaths.Add(path);
             }
+
+
             return mutatedPaths;
         }
 
@@ -247,7 +266,7 @@ namespace Optimization
 
         private Path RepairSinglePath(Path path)
         {
-            Path tempRepairedPath = new Path();
+            Path outboundRepairedPath = new Path();
 
             // OutboundCell repair
             for (int i = 0; i < path.pathCells.Count; i++)
@@ -255,45 +274,73 @@ namespace Optimization
                 if (IsCellOutOfBounds(path.pathCells[i]))
                 {
                     int lastCellInBound = i - 1;
+                    (int, int) connectToCell;
                     // Run while we still out of bounds or items left.
-                    while (i < path.pathCells.Count - 1 && IsCellOutOfBounds(path.pathCells[++i])) ;
-                    tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsMonotony(path.pathCells[lastCellInBound], path.pathCells[i]));
+                    while (i + 1 < path.pathCells.Count && IsCellOutOfBounds(path.pathCells[++i])) ;
+
+                    connectToCell = path.pathCells[i];
+                    // Last item is not destination.
+                    if (i == path.pathCells.Count - 1 && IsCellOutOfBounds(path.pathCells[i]))
+                        connectToCell = SimulationData.Instance.DestinationCell;
+                    // Repair connects last cell in bound with the new cell
+                    outboundRepairedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsMonotony(path.pathCells[lastCellInBound], connectToCell));
                 }
                 else
-                    tempRepairedPath.pathCells.Add(path.pathCells[i]);
+                    outboundRepairedPath.pathCells.Add(path.pathCells[i]);
             }
 
             // Connects items to source (if it's already connected nothig will happen).
-            if (SimulationData.Instance.SourceCell != tempRepairedPath.pathCells.First())
+            if (SimulationData.Instance.SourceCell != outboundRepairedPath.pathCells.First())
             {
-                var oldFirst = tempRepairedPath.pathCells.First();
-                tempRepairedPath.pathCells.Insert(0, SimulationData.Instance.SourceCell);
-                tempRepairedPath.pathCells.InsertRange(0, PathGenerator.Instance.ConnectCellsMonotony(SimulationData.Instance.SourceCell, tempRepairedPath.pathCells.First()));
-                tempRepairedPath.pathCells.Remove(oldFirst);
+                var oldFirst = outboundRepairedPath.pathCells.First();
+                outboundRepairedPath.pathCells.Insert(0, SimulationData.Instance.SourceCell);
+                outboundRepairedPath.pathCells.InsertRange(0, PathGenerator.Instance.ConnectCellsMonotony(SimulationData.Instance.SourceCell, oldFirst));
+                outboundRepairedPath.pathCells.Remove(oldFirst);
             }
             // Connects last item to destination (if it's already connected nothig will happen).
-            tempRepairedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsMonotony(tempRepairedPath.pathCells.Last(), SimulationData.Instance.DestinationCell));
+            outboundRepairedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsMonotony(outboundRepairedPath.pathCells.Last(), SimulationData.Instance.DestinationCell));
 
-            Path finalRepairedPath = new Path();
+            Path obstacleRepairedPath = new Path();
 
             // ObstacleRepair
-            for (int i = 0; i < tempRepairedPath.pathCells.Count; i++)
+            for (int i = 0; i < outboundRepairedPath.pathCells.Count; i++)
             {
-                // Cell is obstacle.
-                if (!IsCellOutOfBounds(tempRepairedPath.pathCells[i]) && SimulationData.Instance.SimulationGrid.GetCellWD(tempRepairedPath.pathCells[i]) == 1)
+                if (IsCellOutOfBounds(outboundRepairedPath.pathCells[i]))
                 {
-                    if (i + 1 == tempRepairedPath.pathCells.Count)
+                    Console.WriteLine("Should not get here since outbound is already repaired");
+                }
+                // Cell is obstacle.
+                if (!IsCellOutOfBounds(outboundRepairedPath.pathCells[i]) && SimulationData.Instance.SimulationGrid.GetCellWD(outboundRepairedPath.pathCells[i]) == 1)
+                {
+                    if (i + 1 == outboundRepairedPath.pathCells.Count)
                         throw new Exception("Cannot access out of bounds cells");
-                    finalRepairedPath.pathCells.AddRange(PathGenerator.Instance.BypassObstacle(tempRepairedPath.pathCells[i - 1], tempRepairedPath.pathCells[i + 1], tempRepairedPath.pathCells[i]));
+                    obstacleRepairedPath.pathCells.AddRange(PathGenerator.Instance.BypassObstacle(outboundRepairedPath.pathCells[i - 1], outboundRepairedPath.pathCells[i + 1], outboundRepairedPath.pathCells[i]));
                     i++;
                     continue;
                 }
 
                 // Else all is normal.
-                finalRepairedPath.pathCells.Add(tempRepairedPath.pathCells[i]);
+                obstacleRepairedPath.pathCells.Add(outboundRepairedPath.pathCells[i]);
             }
 
-            return finalRepairedPath;
+            Path loopRepairedPath = new Path();
+
+            // Remove path redundant loops
+            for (int i = 0; i < obstacleRepairedPath.pathCells.Count; i++)
+            {
+                for (int j = i + 1; j < obstacleRepairedPath.pathCells.Count; j++)
+                {
+                    // We have inner loop that should be removed
+                    if (obstacleRepairedPath.pathCells[i] == obstacleRepairedPath.pathCells[j])
+                    {
+                        // We will skip all the cells between since they are redundant.
+                        i = j;
+                    }
+                }
+                loopRepairedPath.pathCells.Add(obstacleRepairedPath.pathCells[i]);
+            }
+
+            return loopRepairedPath;
         }
 
         private bool IsCellOutOfBounds((int x, int y) cell)
@@ -311,11 +358,15 @@ namespace Optimization
             double pathSumWD = 0;
             double f1, f2;
 
-            foreach ((int x, int y) cell in pathToEvaluate.pathCells)
+            foreach (var cell in pathToEvaluate.pathCells)
             {
                 // Cell is out of boundries.
                 if (IsCellOutOfBounds(cell))
+                {
                     outOfBoundryCellsCount++;
+                    pathSumWD += 1;
+                }
+
                 else
                 {
                     // Cell containing obstacle
@@ -331,7 +382,7 @@ namespace Optimization
                 f1 = 1;
             else
             {
-                f1 = (grid.size * grid.size) - SimulationData.Instance.PopulationSize; // (n^2 -c)
+                f1 = (grid.size * grid.size) - pathToEvaluate.pathCells.Count; // (n^2 -c)
 
                 if (obstaclesCellsCount != 0)
                     f1 /= (20.0 * obstaclesCellsCount); // (n^2 -c) / (20I)

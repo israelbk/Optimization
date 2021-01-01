@@ -41,16 +41,16 @@ namespace Optimization
             List<(int, int)> pathCells = new List<(int, int)>();
 
             pathCells.AddRange((bool)isXmonotone ? GetMonotonXCells(from, to) : GetMonotonYCells(from, to));
-            pathCells.AddRange((bool)isXmonotone ? GetMonotonYCells((to.x,from.y), to) : GetMonotonXCells((from.x,to.y), to));
+            pathCells.AddRange((bool)isXmonotone ? GetMonotonYCells((to.x, from.y), to) : GetMonotonXCells((from.x, to.y), to));
 
             return pathCells;
         }
 
-        public List<(int, int)> BypassObstacle((int x, int y) from, (int x, int y) to, (int x, int y) obstacleCell,int maxAttempts =10)
+        public List<(int, int)> BypassObstacle((int x, int y) from, (int x, int y) to, (int x, int y) obstacleCell, int maxAttempts = 10)
         {
             List<(int, int)> bypassedCells = new List<(int, int)>();
             (int x, int y) currentIndex = from;
-            while (!(currentIndex.x == to.x && currentIndex.y == to.y) && (maxAttempts-- !=0))
+            while ((currentIndex != to) && (maxAttempts-- != 0))
             {
                 (int x, int y) tempCell = GetNextRandomCell(currentIndex, to);
                 if (tempCell == obstacleCell)
@@ -58,6 +58,11 @@ namespace Optimization
                 currentIndex = tempCell;
                 bypassedCells.Add(currentIndex);
             }
+
+            // We didn't mange to bypass randomally.
+            if (maxAttempts <= 0 && currentIndex != to)
+                return ConnectCellsMonotony(from, to);
+
             return bypassedCells;
         }
 
@@ -182,25 +187,32 @@ namespace Optimization
             int yDirection = dIndex.y == currentIndex.y ? 0 : dIndex.y > currentIndex.y ? 1 : -1;
             int oppositeX = xDirection == 0 ? (random.Next(2) == 0 ? -1 : 1) : -1 * xDirection;
             int oppositeY = yDirection == 0 ? (random.Next(2) == 0 ? -1 : 1) : -1 * yDirection;
+            int num;
 
-            int num = random.Next(25);
+            (int, int) newCell = currentIndex;
+            while (newCell == currentIndex)
+            {
+                num = random.Next(25);
 
-            if (num <= 5)
-                return (currentIndex.x + xDirection, currentIndex.y + yDirection);
-            else if (num <= 9)
-                return (currentIndex.x + xDirection, currentIndex.y);
-            else if (num <= 13)
-                return (currentIndex.x, currentIndex.y + yDirection);
-            else if (num <= 16)
-                return (currentIndex.x + xDirection, currentIndex.y + oppositeY);
-            else if (num <= 19)
-                return (currentIndex.x + oppositeX, currentIndex.y + yDirection);
-            else if (num <= 21)
-                return (currentIndex.x, currentIndex.y + oppositeY);
-            else if (num <= 23)
-                return (currentIndex.x + oppositeX, currentIndex.y);
-            else
-                return (currentIndex.x + oppositeX, currentIndex.y + oppositeY);
+                if (num <= 5)
+                    newCell = (currentIndex.x + xDirection, currentIndex.y + yDirection);
+                else if (num <= 9)
+                    newCell = (currentIndex.x + xDirection, currentIndex.y);
+                else if (num <= 13)
+                    newCell = (currentIndex.x, currentIndex.y + yDirection);
+                else if (num <= 16)
+                    newCell = (currentIndex.x + xDirection, currentIndex.y + oppositeY);
+                else if (num <= 19)
+                    newCell = (currentIndex.x + oppositeX, currentIndex.y + yDirection);
+                else if (num <= 21)
+                    newCell = (currentIndex.x, currentIndex.y + oppositeY);
+                else if (num <= 23)
+                    newCell = (currentIndex.x + oppositeX, currentIndex.y);
+                else
+                    newCell = (currentIndex.x + oppositeX, currentIndex.y + oppositeY);
+            }
+
+            return newCell;
         }
     }
 }
