@@ -65,6 +65,20 @@ namespace Optimization
 
         }
 
+        internal static void PrintAverageFitness()
+        {
+            int i = 0;
+            double sumF1 = 0;
+            double sumF2 = 0;
+            foreach (var fitness in SimulationData.Instance.Fitnesses)
+            {
+                //Console.WriteLine($"path: {i} f1-{fitness.Value.f1}, f2-{fitness.Value.f2}");
+                sumF1 += fitness.Value.f1;
+                sumF2 += fitness.Value.f2;
+            }
+            Console.WriteLine($"Average fitness: f1-{sumF1 / SimulationData.Instance.PopulationSize}, f2-{sumF2 / SimulationData.Instance.PopulationSize}");
+        }
+
         public static void PrintPaths()
         {
             int i = 0;

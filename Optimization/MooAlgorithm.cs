@@ -39,18 +39,24 @@ namespace Optimization
             int generationCount = SimulationData.Instance.GenerationAmount;
             while (generationCount-- > 0)
             {
-                if (generationCount % 10 == 0)
-                    Console.WriteLine($"Iteration: {SimulationData.Instance.GenerationAmount - generationCount}");
+                //if (generationCount % 10 == 0)
+                //    Console.WriteLine($"Iteration: {SimulationData.Instance.GenerationAmount - generationCount}");
                 PathRepair();
                 EvaluatePaths();
                 CalcRank();
-                if (generationCount % 10 == 0)
-                    Printer.PrintPaths();
                 GeneticOperators(SelectionMechanism());
+                MutatePaths();
+                if (generationCount % 10 == 0)
+                {
+                    EvaluatePaths();
+                    Printer.PrintAverageFitness();
+                }
+                if (generationCount % 100 == 0)
+                {
+                    CalcRank();
+                    Printer.PrintPaths();
+                }
             }
-
-            //CalcRank();
-            //Printer.PrintPaths();
 
         }
 
@@ -85,11 +91,26 @@ namespace Optimization
         {
             // Resets the population to contain only the winners of the tournament selection.
             SimulationData.Instance.PopulationPaths = new List<Path>(selectedPath);
-
+            List<Path> potentialNewPaths = new List<Path>();
             for (int i = 0; i < selectedPath.Count; i += 2)
+                potentialNewPaths.AddRange(GetNewPathsGenetically(selectedPath[i], selectedPath[i + 1]));
+
+            var shuffeldPotentialNewPaths = potentialNewPaths.ToArray().OrderBy(c => random.Next()).ToList();
+
+            foreach (var potentialPath in shuffeldPotentialNewPaths)
             {
-                SimulationData.Instance.PopulationPaths.AddRange(MutatePaths(GetNewPathsGenetically(selectedPath[i], selectedPath[i + 1])));
+                // The child is new path.
+                if (!IsAnyPathAheadEqual(potentialPath, 0))
+                {
+                    SimulationData.Instance.PopulationPaths.Add(potentialPath);
+                    // we filled the population path.
+                    if (SimulationData.Instance.PopulationPaths.Count() == SimulationData.Instance.PopulationSize)
+                        return;
+                }
             }
+
+            // Fill up the rest of the path and it will be mutated since it's equal to other paths.
+            SimulationData.Instance.PopulationPaths.AddRange(shuffeldPotentialNewPaths.Take(SimulationData.Instance.PopulationSize - SimulationData.Instance.PopulationPaths.Count));
         }
 
         /// <summary>
@@ -106,37 +127,103 @@ namespace Optimization
         /// <param name="path1"></param>
         /// <param name="path2"></param>
         /// <returns></returns>
-        private IEnumerable<Path> GetNewPathsGenetically(Path path1, Path path2)
+        private List<Path> GetNewPathsGenetically(Path path1, Path path2)
         {
-            List<(int, int)> mutualIndexes = GetMutualPathsCells(path1, path2);
+            List<(int, int)> pathsMutualCells = GetMutualPathsCells(path1, path2);
+            List<(int, int)> filteredMutualCells = filterMutalCellByDistinctChilden(path1, path2, pathsMutualCells);
             // No common cells
-            if (mutualIndexes.Count == 0)
+            if (filteredMutualCells.Count == 0)
                 return GetMonotoneGeneticPaths(path1, path2);
 
-            // Else, there is connection spots between the cells.
-            var randomMutualCell = mutualIndexes.ElementAt(random.Next(mutualIndexes.Count));
-            var path1MutualIndex = path1.pathCells.IndexOf(randomMutualCell);
-            var path2MutualIndex = path2.pathCells.IndexOf(randomMutualCell);
-
             List<Path> childPaths = new List<Path>();
-            Path newPath1 = new Path();
-            Path newPath2 = new Path();
 
-            var path1FirstHalf = path1.pathCells.Take(path1MutualIndex);
-            var path1SecondHalf = path1.pathCells.Skip(path1MutualIndex);
-            var path2FirstHalf = path2.pathCells.Take(path2MutualIndex);
-            var path2SecondHalf = path2.pathCells.Skip(path2MutualIndex);
+            foreach (var mutualCell in filteredMutualCells)
+            {
+                Path newPath1 = new Path();
+                Path newPath2 = new Path();
 
-            newPath1.pathCells.AddRange(path1FirstHalf);
-            newPath1.pathCells.AddRange(path2SecondHalf);
+                var path1MutualIndex = path1.pathCells.IndexOf(mutualCell);
+                var path2MutualIndex = path2.pathCells.IndexOf(mutualCell);
 
-            newPath2.pathCells.AddRange(path2FirstHalf);
-            newPath2.pathCells.AddRange(path1SecondHalf);
+                var path1FirstHalf = path1.pathCells.Take(path1MutualIndex);
+                var path1SecondHalf = path1.pathCells.Skip(path1MutualIndex);
+                var path2FirstHalf = path2.pathCells.Take(path2MutualIndex);
+                var path2SecondHalf = path2.pathCells.Skip(path2MutualIndex);
 
-            childPaths.Add(newPath1);
-            childPaths.Add(newPath2);
+                newPath1.pathCells.AddRange(path1FirstHalf);
+                newPath1.pathCells.AddRange(path2SecondHalf);
+
+                newPath2.pathCells.AddRange(path2FirstHalf);
+                newPath2.pathCells.AddRange(path1SecondHalf);
+
+                childPaths.Add(newPath1);
+                childPaths.Add(newPath2);
+            }
 
             return childPaths;
+        }
+
+        private List<(int, int)> filterMutalCellByDistinctChilden(Path path1, Path path2, List<(int, int)> pathsMutualCells)
+        {
+            List<(int, int)> distinctMutualCells = new List<(int, int)>();
+            bool firstHalfDistincted, secondHalfDistincted;
+
+            foreach (var mutualCell in pathsMutualCells)
+            {
+                firstHalfDistincted = false;
+                secondHalfDistincted = false;
+
+                int index1 = path1.pathCells.IndexOf(mutualCell);
+                int index2 = path2.pathCells.IndexOf(mutualCell);
+
+                if (index1 != index2)
+                    firstHalfDistincted = true;
+
+                else
+                {
+                    for (int i = 0; i < index1; i++)
+                    {
+                        if (path1.pathCells[i] != path2.pathCells[i])
+                            firstHalfDistincted = true;
+                    }
+                }
+
+                if (path1.pathCells.Count - index1 != path2.pathCells.Count - index2)
+                    secondHalfDistincted = true;
+                else
+                {
+                    for (int i = 0; i < path1.pathCells.Count - index1; i++)
+                    {
+                        if (path1.pathCells[index1 + i] != path2.pathCells[index2 + i])
+                            secondHalfDistincted = true;
+                    }
+                }
+
+                if (firstHalfDistincted && secondHalfDistincted)
+                {
+                    distinctMutualCells.Add(mutualCell);
+                    continue;
+                }
+            }
+
+            return distinctMutualCells;
+        }
+
+        private bool ArePathsEqual(Path path1, Path path2)
+        {
+            if (path1.pathCells.Count != path2.pathCells.Count)
+                return false;
+            for (int i = 0; i < path1.pathCells.Count; i++)
+            {
+                if (!AreCellsEqual(path1.pathCells[i], path2.pathCells[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        private bool AreCellsEqual((int x, int y) path1, (int x, int y) path2)
+        {
+            return (path1.x == path2.x && path1.y == path2.y);
         }
 
 
@@ -146,7 +233,7 @@ namespace Optimization
         /// <param name="path1"></param>
         /// <param name="path2"></param>
         /// <returns></returns>
-        private IEnumerable<Path> GetMonotoneGeneticPaths(Path path1, Path path2)
+        private List<Path> GetMonotoneGeneticPaths(Path path1, Path path2)
         {
             List<Path> childPaths = new List<Path>();
             Path newPath1 = new Path();
@@ -200,32 +287,55 @@ namespace Optimization
         /// </summary>
         /// <param name="paths"></param>
         /// <returns></returns>
-        private IEnumerable<Path> MutatePaths(IEnumerable<Path> paths)
+        private void MutatePaths()
         {
             List<Path> mutatedPaths = new List<Path>();
-            foreach (var path in paths)
+            int mutationCount = 0;
+            int pathIndex = 0;
+            foreach (var path in SimulationData.Instance.PopulationPaths)
             {
+                pathIndex++;
                 // Should mutate.
                 if (random.NextDouble() < SimulationData.Instance.MutationProbability)
                 {
-                    // Selects randomally cell to mutate.
-                    int mutatedCellFromIndex = random.Next(1, path.pathCells.Count - 1);
-                    int mutatedCellToIndex = random.Next(mutatedCellFromIndex, path.pathCells.Count);
-
-                    Path mutatedPath = new Path();
-                    // Copies all the cell untill the mutation.
-                    mutatedPath.pathCells.AddRange(path.pathCells.GetRange(0, mutatedCellFromIndex));
-                    // Randomlly connects the mutation points.
-                    mutatedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsRandomally(path.pathCells[mutatedCellFromIndex - 1], path.pathCells[mutatedCellToIndex]));
-                    mutatedPath.pathCells.AddRange(path.pathCells.GetRange(mutatedCellToIndex, path.pathCells.Count - mutatedCellToIndex));
-                    mutatedPaths.Add(mutatedPath);
+                    mutatedPaths.Add(MutuateSinglePath(path, randomaly: true));
+                }
+                else if (IsAnyPathAheadEqual(path, pathIndex))
+                {
+                    mutatedPaths.Add(MutuateSinglePath(path, randomaly: false));
                 }
                 else
                     mutatedPaths.Add(path);
             }
+            SimulationData.Instance.PopulationPaths = mutatedPaths;
+        }
 
+        private Path MutuateSinglePath(Path path, bool randomaly)
+        {
+            // Selects randomally cell to mutate.
+            int mutatedCellFromIndex = random.Next(1, path.pathCells.Count - 1);
+            int mutatedCellToIndex = random.Next(mutatedCellFromIndex, path.pathCells.Count);
 
-            return mutatedPaths;
+            Path mutatedPath = new Path();
+            // Copies all the cell untill the mutation.
+            mutatedPath.pathCells.AddRange(path.pathCells.GetRange(0, mutatedCellFromIndex));
+            // Randomlly connects the mutation points.
+            if (randomaly)
+                mutatedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsRandomally(path.pathCells[mutatedCellFromIndex - 1], path.pathCells[mutatedCellToIndex]));
+            else
+                mutatedPath.pathCells.AddRange(PathGenerator.Instance.ConnectCellsMonotony(path.pathCells[mutatedCellFromIndex - 1], path.pathCells[mutatedCellToIndex]));
+
+            mutatedPath.pathCells.AddRange(path.pathCells.GetRange(mutatedCellToIndex, path.pathCells.Count - mutatedCellToIndex));
+
+            return mutatedPath;
+        }
+
+        private bool IsAnyPathAheadEqual(Path currentPath, int pathIndex)
+        {
+            for (int i = pathIndex; i < SimulationData.Instance.PopulationPaths.Count(); i++)
+                if (ArePathsEqual(SimulationData.Instance.PopulationPaths[i], currentPath))
+                    return true;
+            return false;
         }
 
         private List<Path> SelectionMechanism()
