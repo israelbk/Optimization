@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 
@@ -8,7 +9,9 @@ namespace Optimization
     class SimulationInitializer
     {
 
-        private static string gridFilePath = System.IO.Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName, "Grid.json");
+        private static readonly string gridFilePath = System.IO.Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName, "Grid.json");
+        private static readonly string pStarFilePath = System.IO.Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName, "PStar2.json");
+        private static string qFilePath = System.IO.Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName, "Q.json");
 
         internal static void InitSimulation()
         {
@@ -18,6 +21,21 @@ namespace Optimization
                 setDataFromConfig();
             else
                 setDataFromUser();
+        }
+
+        internal static void WriteQ(List<(double, double)> q, int qIndex = 0)
+        {
+            var filePath = qIndex == 0 ? qFilePath : string.Concat(qFilePath.Split('.')[0], qIndex, '.', qFilePath.Split('.')[1]);
+            File.WriteAllText(filePath, JsonConvert.SerializeObject(q));
+        }
+        public static void Temp(int qIndex = 0)
+        {
+            Console.WriteLine(string.Concat(qFilePath.Split('.')[0], qIndex, '.', qFilePath.Split('.')[1]));
+        }
+
+        internal static void WritePStar(List<(double, double)> pStar)
+        {
+            File.WriteAllText(pStarFilePath, JsonConvert.SerializeObject(pStar));
         }
 
         private static void setDataFromUser()
@@ -45,7 +63,7 @@ namespace Optimization
 
             Console.WriteLine("Enter amount of generation to run the simulation");
             simulationData.GenerationAmount = int.Parse(Console.ReadLine());
-            
+
             Console.WriteLine("Enter Mutation Probability for the simulation (0-1)");
             simulationData.MutationProbability = double.Parse(Console.ReadLine());
         }
@@ -64,10 +82,12 @@ namespace Optimization
             simulationData.PopulationSize = int.Parse(ConfigurationManager.AppSettings["initialPopulationSize"]);
             simulationData.GenerationAmount = int.Parse(ConfigurationManager.AppSettings["generationAmount"]);
             simulationData.MutationProbability = double.Parse(ConfigurationManager.AppSettings["mutationProbability"]);
-           simulationData.SourceCell = GetCellFromString(ConfigurationManager.AppSettings["sourceCell"]);
+            simulationData.SourceCell = GetCellFromString(ConfigurationManager.AppSettings["sourceCell"]);
             simulationData.DestinationCell = GetCellFromString(ConfigurationManager.AppSettings["destinationCell"]);
             simulationData.SimulationGrid = JsonConvert.DeserializeObject<Grid>(File.ReadAllText(gridFilePath));
             simulationData.SimulationBoardSize = simulationData.SimulationGrid.size;
+            simulationData.GeneratePStar = bool.Parse(ConfigurationManager.AppSettings["createPStar"]);
+
         }
     }
 }

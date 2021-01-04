@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Optimization
 {
@@ -52,6 +51,22 @@ namespace Optimization
 
         }
 
+        internal static void PrintPStarTime(long elapsedMilliseconds)
+        {
+            Console.WriteLine("\n");
+            Console.WriteLine($"p-star generating (30 simulation) where each simulation contains {SimulationData.Instance.PopulationSize} paths and " +
+                $" {SimulationData.Instance.GenerationAmount} generation took {elapsedMilliseconds} ms");
+            Console.WriteLine("\n");
+        }
+
+        internal static void PrintSimulationTime(long elapsedMilliseconds)
+        {
+            Console.WriteLine("\n");
+            Console.WriteLine($"simulation time for {SimulationData.Instance.PopulationSize} paths and" +
+                $"  {SimulationData.Instance.GenerationAmount} generation took {elapsedMilliseconds} ms");
+            Console.WriteLine("\n");
+        }
+
         public static void PrintMetaData(long initalPopulationTime)
         {
             // Prints the source and destination of the path.
@@ -62,7 +77,6 @@ namespace Optimization
             Console.WriteLine("\n");
             Console.WriteLine($"initialization time for {SimulationData.Instance.PopulationSize} paths took {initalPopulationTime} ms");
             Console.WriteLine("\n");
-
         }
 
         internal static void PrintAverageFitness()

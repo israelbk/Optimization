@@ -4,6 +4,7 @@ namespace Optimization
 {
     class SimulationData
     {
+        public bool GeneratePStar { get; set; }
         public int SimulationBoardSize { get; set; }
         public (int, int) SourceCell { get; set; }
         public (int, int) DestinationCell { get; set; }

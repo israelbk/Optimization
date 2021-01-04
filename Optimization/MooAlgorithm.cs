@@ -7,25 +7,17 @@ namespace Optimization
 {
     class MooAlgorithm
     {
-        private Stopwatch watch { get; set; }
-        private long initalPopulationTime { get; set; }
         private Random random;
 
         public MooAlgorithm()
         {
             random = new Random();
-            watch = new Stopwatch();
-            watch.Start();
-            PathGenerator.Instance.GetInitialPaths();
-            watch.Stop();
-            initalPopulationTime = watch.ElapsedMilliseconds;
-            watch.Reset();
-
-            Printer.PrintMetaData(initalPopulationTime);
         }
 
-        internal void RunSimulation()
+        internal List<(double, double)> RunSimulation()
         {
+            PathGenerator.Instance.GetInitialPaths();
+
             // Validate simulation data.
             if (IsCellOutOfBounds(SimulationData.Instance.SourceCell) ||
                          IsCellOutOfBounds(SimulationData.Instance.SourceCell) ||
@@ -33,7 +25,7 @@ namespace Optimization
                          SimulationData.Instance.SimulationGrid.GetCellWD(SimulationData.Instance.DestinationCell) == 1)
             {
                 Console.WriteLine("Source Or destination cells are not valid, exiting...");
-                return;
+                return null;
             }
 
             int generationCount = SimulationData.Instance.GenerationAmount;
@@ -46,18 +38,32 @@ namespace Optimization
                 CalcRank();
                 GeneticOperators(SelectionMechanism());
                 MutatePaths();
-                if (generationCount % 10 == 0)
-                {
-                    EvaluatePaths();
-                    Printer.PrintAverageFitness();
-                }
-                if (generationCount % 100 == 0)
-                {
-                    CalcRank();
-                    Printer.PrintPaths();
-                }
+                //if (generationCount % 10 == 0)
+                //{
+                //    EvaluatePaths();
+                //    Printer.PrintAverageFitness();
+                //}
+                //if (generationCount % 100 == 0)
+                //{
+                //    CalcRank();
+                //    Printer.PrintPaths();
+                //}
             }
+            EvaluatePaths();
 
+            return SimulationData.Instance.Fitnesses.Values.ToList(); ;
+
+        }
+
+        internal List<(double, double)> GetNondominatedSubgroup(List<(double, double)> unionResults)
+        {
+            List<(double, double)> nonDominatedFitnesses = new List<(double, double)>();
+            foreach (var result in unionResults)
+            {
+                if (!IsFitnessDominated(result, unionResults))
+                    nonDominatedFitnesses.Add(result);
+            }
+            return nonDominatedFitnesses;
         }
 
         private bool isIncorrectPath(Path path)
@@ -85,6 +91,15 @@ namespace Optimization
                         dominatedByCount++;
                 SimulationData.Instance.Ranks.Add(fitness.Key, SimulationData.Instance.PopulationSize - dominatedByCount);
             }
+        }
+
+        private bool IsFitnessDominated((double f1, double f2) currentFitness, List<(double f1, double f2)> fitnessGroup)
+        {
+            foreach (var otherPathFitness in fitnessGroup)
+                if ((otherPathFitness.f1 > currentFitness.f1 && otherPathFitness.f2 >= currentFitness.f2) ||
+                    (otherPathFitness.f2 > currentFitness.f2 && otherPathFitness.f1 >= currentFitness.f1))
+                    return true;
+            return false;
         }
 
         private void GeneticOperators(List<Path> selectedPath)
